@@ -9,7 +9,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       <AppSidebar />
       <div className="flex flex-col flex-1">
         <AppHeader />
-        {children}
+        <div className="p-5">{children}</div>
       </div>
     </SidebarProvider>
   );
