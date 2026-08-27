@@ -3,11 +3,9 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Provider from "./provider";
+import { cn } from "@/lib/utils";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Next.js Premium Startup Boilerplate",
@@ -22,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${inter.variable} font-sans`}>
+      <html lang="en" className={cn("font-sans", inter.variable)}>
         <body className="antialiased" style={{ margin: 0, padding: 0 }}>
           <Provider>{children}</Provider>
         </body>
