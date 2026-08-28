@@ -1,8 +1,9 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Plus, Sparkles } from "lucide-react";
 import React from "react";
+import CustomNewBoardDialog from "./CustomNewBoardDialog";
 
 const WelcomeBanner = () => {
   const { user } = useUser();
@@ -29,14 +30,19 @@ const WelcomeBanner = () => {
         </h2>
 
         <p className="mt-2 text-slate-text text-base font-normal">
-          Turn your ideas into diagrams, notes and visuals on an infinite canvas.
+          Turn your ideas into diagrams, notes and visuals on an infinite
+          canvas.
         </p>
 
         <div className="flex flex-wrap items-center gap-3 mt-6">
-          <Button className="bg-primary-blue hover:bg-primary-blue/90 text-white rounded-xl px-5 py-2.5 h-auto font-medium shadow-xs flex items-center gap-2">
-            <span>Create New Board</span>
-            <ArrowRight className="w-4 h-4" />
-          </Button>
+          <CustomNewBoardDialog
+            trigger={
+              <Button className="bg-primary-blue hover:bg-primary-blue/90 text-white rounded-xl px-5 py-2.5 h-auto font-medium shadow-xs flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                <span>Create New Board</span>
+              </Button>
+            }
+          />
           <Button
             variant="outline"
             className="bg-card-surface hover:bg-ai-light-purple border-border-divider text-navy rounded-xl px-5 py-2.5 h-auto font-medium shadow-xs flex items-center gap-2"
@@ -78,4 +84,3 @@ const WelcomeBanner = () => {
 };
 
 export default WelcomeBanner;
-
