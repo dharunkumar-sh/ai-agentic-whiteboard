@@ -1,0 +1,12 @@
+.excalidraw .App-menu__left {
+  display: none !important;
+}
+
+.excalidraw .App-toolbar{
+  display: none !important;
+}
+
+.excalidraw .layer-ui__wrapper .zen-mode-transition{
+  display: none !important;
+
+}
