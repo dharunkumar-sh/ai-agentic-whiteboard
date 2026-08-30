@@ -2,14 +2,15 @@
 import Image from "next/image";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Save, Share } from "lucide-react";
+import { DownloadIcon, Save, Share } from "lucide-react";
 
 type Props = {
   selectedTab: (value: string) => void;
+  onExport?: () => void;
 };
 
-const WorkspaceHeader = ({ selectedTab }: Props) => {
-  return (
+const WorkspaceHeader = ({ selectedTab, onExport }: Props) => {
+    return (
     <div className="p-3 border-b flex justify-between items-center">
       <div className="flex items-center gap-2">
         <Image src={"/logo.svg"} alt="Logo" width={35} height={35} />
@@ -36,6 +37,10 @@ const WorkspaceHeader = ({ selectedTab }: Props) => {
         <Button variant="outline">
           <Share />
           Share
+        </Button>
+        <Button variant="secondary" onClick={onExport}>
+          <DownloadIcon />
+          Export
         </Button>
       </div>
     </div>

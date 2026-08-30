@@ -19,7 +19,6 @@ import {
   Square,
   Type,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import FloatingProperties from "./FloatingProperties";
 
@@ -88,7 +87,11 @@ const Excalidraw = dynamic(
   },
 );
 
-const Whiteboard = () => {
+type Props = {
+  onAPIReady: (api: ExcalidrawImperativeAPI) => void;
+};
+
+const Whiteboard = ({ onAPIReady }: Props) => {
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
   const saveTimeRef = useRef<any>(null);
@@ -199,7 +202,10 @@ const Whiteboard = () => {
         <Excalidraw
           onChange={handleCanvasChange}
           //@ts-ignore
-          excalidrawAPI={setExcalidrawAPI}
+          excalidrawAPI={(api) => {
+            setExcalidrawAPI(api);
+            onAPIReady(api);
+          }}
         />
 
         {selectedElement && (

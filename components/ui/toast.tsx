@@ -9,8 +9,11 @@ import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Load
 
 const toast = ToastPrimitive.createToastManager()
 
-function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
-  return <ToastPrimitive.Provider {...props} />
+function ToastProvider({
+  timeout = 5000,
+  ...props
+}: ToastPrimitive.Provider.Props) {
+  return <ToastPrimitive.Provider timeout={timeout} {...props} />
 }
 
 function ToastPortal({ ...props }: ToastPrimitive.Portal.Props) {

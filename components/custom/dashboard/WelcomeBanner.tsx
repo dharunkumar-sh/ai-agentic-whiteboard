@@ -43,13 +43,6 @@ const WelcomeBanner = () => {
               </Button>
             }
           />
-          <Button
-            variant="outline"
-            className="bg-card-surface hover:bg-ai-light-purple border-border-divider text-navy rounded-xl px-5 py-2.5 h-auto font-medium shadow-xs flex items-center gap-2"
-          >
-            <Sparkles className="w-4 h-4 text-accent-purple" />
-            <span>Ask AI</span>
-          </Button>
         </div>
       </div>
 

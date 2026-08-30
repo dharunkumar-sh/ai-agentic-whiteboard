@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { Archive, LayoutGrid, Settings, Sparkles, Users } from "lucide-react";
+import { Archive, LayoutGrid, Settings, Users } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
@@ -54,13 +54,9 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>My Boards</SidebarGroupLabel>
-          <SidebarMenuButton className="p-5" isActive={path === "/ai"}>
-            <Sparkles />
-            <span>AI Helper</span>
-          </SidebarMenuButton>
+          <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarMenuButton
-            className="p-5 mt-2"
+            className="p-5"
             isActive={path === "/settings"}
           >
             <Settings />
