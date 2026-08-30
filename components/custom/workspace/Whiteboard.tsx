@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import "@excalidraw/excalidraw/index.css";
 import axios from "axios";
@@ -99,6 +99,106 @@ const Whiteboard = ({ onAPIReady }: Props) => {
   const [activeTool, setActiveTool] = useState<any>();
   const [selectedElement, setSelectedElement] = useState<any>(null);
   const [canvasState, setCanvasState] = useState<any>(null);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">(
+    "saved",
+  );
+  const isLoadedRef = useRef<boolean>(false);
+  const lastSavedElementsRef = useRef<string>("");
+  const pendingDataRef = useRef<{ elements: any[]; appState: any; files: any } | null>(
+    null,
+  );
+
+  // Sanitize appState for DB serialization (stripping Map objects & transient interaction state)
+  const sanitizeAppStateForSave = (rawAppState: any) => {
+    if (!rawAppState || typeof rawAppState !== "object") return {};
+    const {
+      collaborators,
+      selectedElementIds,
+      editingElement,
+      resizingElement,
+      draggingElement,
+      selectionElement,
+      ...rest
+    } = rawAppState;
+    return rest;
+  };
+
+  // Clean appState when restoring to Excalidraw (ensuring collaborators is a valid Map)
+  const cleanAppStateForRestore = (rawAppState: any) => {
+    if (!rawAppState || typeof rawAppState !== "object") return undefined;
+    const {
+      collaborators,
+      selectedElementIds,
+      editingElement,
+      resizingElement,
+      draggingElement,
+      selectionElement,
+      ...rest
+    } = rawAppState;
+
+    return {
+      ...rest,
+      collaborators: new Map(),
+    };
+  };
+
+  // Load existing whiteboard data from database on mount
+  useEffect(() => {
+    if (!excalidrawAPI || !projectId) return;
+
+    const loadWhiteboardData = async () => {
+      try {
+        const res = await axios.get(`/api/whiteboard?projectId=${projectId}`);
+        const data = res.data?.data;
+
+        if (data && data.elements) {
+          lastSavedElementsRef.current = JSON.stringify(data.elements);
+          excalidrawAPI.updateScene({
+            elements: data.elements,
+            appState: cleanAppStateForRestore(data.appState),
+          });
+
+          if (data.files) {
+            excalidrawAPI.addFiles(data.files);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load existing whiteboard data:", err);
+      } finally {
+        isLoadedRef.current = true;
+      }
+    };
+
+    loadWhiteboardData();
+  }, [excalidrawAPI, projectId]);
+
+  // Execute direct save
+  const performSave = async (elements: readonly any[], appState: any, files: any) => {
+    if (!projectId) return;
+
+    try {
+      setSaveStatus("saving");
+      const serialized = JSON.stringify(elements);
+      await axios.post("/api/whiteboard", {
+        elements: elements,
+        appState: sanitizeAppStateForSave(appState),
+        files: files,
+        projectId: projectId,
+      });
+
+      lastSavedElementsRef.current = serialized;
+      pendingDataRef.current = null;
+      setSaveStatus("saved");
+    } catch (error) {
+      console.error("Error saving canvas:", error);
+      setSaveStatus("unsaved");
+      toast.add({
+        type: "error",
+        title: "Save Failed",
+        description: "Could not save whiteboard changes.",
+      });
+    }
+  };
 
   const handleCanvasChange = (
     elements: readonly any[],
@@ -115,29 +215,54 @@ const Whiteboard = ({ onAPIReady }: Props) => {
     if (selectedIds.length === 1) {
       const element = elements.find((element) => element.id === selectedIds[0]);
       setSelectedElement(element || null);
-      console.log("Selected Element:", element);
     } else {
       setSelectedElement(null);
     }
-    // Cancel Previous Timer
-    if (saveTimeRef?.current) {
+
+    // Do not trigger save before initial load finishes
+    if (!isLoadedRef.current) return;
+
+    // Check if elements actually changed compared to last saved state
+    const currentSerialized = JSON.stringify(elements);
+    if (currentSerialized === lastSavedElementsRef.current) {
+      return;
+    }
+
+    pendingDataRef.current = { elements: [...elements], appState, files };
+    setSaveStatus("unsaved");
+
+    // Cancel Previous 5-second Timer
+    if (saveTimeRef.current) {
       clearTimeout(saveTimeRef.current);
     }
 
-    // Start New 10 seconds timer
+    // 5-Second Debounced Auto-Save
     saveTimeRef.current = setTimeout(async () => {
-      try {
-        const res = await SaveCanvasChange(elements, appState, files);
-        console.log("Save Canvas Response:", res);
-        toast.add({
-          type: "success",
-          title: "Changes Saved!",
-        });
-      } catch (error) {
-        console.error("Error saving canvas:", error);
-      }
-    }, 10000);
+      await performSave(elements, appState, files);
+    }, 5000);
   };
+
+  // Flush pending save before unmounting or closing tab
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (pendingDataRef.current && projectId) {
+        const { elements, appState, files } = pendingDataRef.current;
+        navigator.sendBeacon?.(
+          "/api/whiteboard",
+          JSON.stringify({ projectId, elements, appState, files }),
+        );
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (saveTimeRef.current) {
+        clearTimeout(saveTimeRef.current);
+      }
+    };
+  }, [projectId]);
 
   const changeTool = (tool: any) => {
     if (!excalidrawAPI) return;
@@ -183,21 +308,8 @@ const Whiteboard = ({ onAPIReady }: Props) => {
     };
   };
 
-  const SaveCanvasChange = async (
-    elements: readonly any[],
-    appState: any,
-    files: any,
-  ) => {
-    return await axios.post("/api/whiteboard", {
-      elements: elements,
-      appState: appState,
-      files: files,
-      projectId: projectId,
-    });
-  };
-
   return (
-    <div>
+    <div className="relative w-full">
       <div style={{ height: "90vh" }}>
         <Excalidraw
           onChange={handleCanvasChange}
@@ -207,6 +319,30 @@ const Whiteboard = ({ onAPIReady }: Props) => {
             onAPIReady(api);
           }}
         />
+
+        {/* Auto-Save Status Pill */}
+        <div className="absolute top-4 right-4 z-40 pointer-events-none">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-card/90 backdrop-blur-md border border-border-divider shadow-xs text-xs font-medium transition-all">
+            {saveStatus === "saving" && (
+              <>
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block" />
+                <span className="text-navy font-semibold">Saving changes...</span>
+              </>
+            )}
+            {saveStatus === "unsaved" && (
+              <>
+                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                <span className="text-slate-text">Auto-saving in 5s...</span>
+              </>
+            )}
+            {saveStatus === "saved" && (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                <span className="text-slate-text">All changes saved</span>
+              </>
+            )}
+          </div>
+        </div>
 
         {selectedElement && (
           <FloatingProperties

@@ -7,9 +7,10 @@ import { DownloadIcon, Save, Share } from "lucide-react";
 type Props = {
   selectedTab: (value: string) => void;
   onExport?: () => void;
+  onSave?: () => void;
 };
 
-const WorkspaceHeader = ({ selectedTab, onExport }: Props) => {
+const WorkspaceHeader = ({ selectedTab, onExport, onSave }: Props) => {
     return (
     <div className="p-3 border-b flex justify-between items-center">
       <div className="flex items-center gap-2">
@@ -30,7 +31,7 @@ const WorkspaceHeader = ({ selectedTab, onExport }: Props) => {
       </div>
       {/* Extra Button */}
       <div className="flex items-center gap-2">
-        <Button>
+        <Button onClick={onSave}>
           <Save />
           Save
         </Button>
