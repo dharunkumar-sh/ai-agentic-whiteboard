@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import FloatingProperties from "./FloatingProperties";
+import BottomDock from "./BottomDock";
 
 const tools = [
   {
@@ -142,6 +143,22 @@ const Whiteboard = ({ onAPIReady }: Props) => {
     };
   };
 
+  // Clean elements when restoring to Excalidraw (ensuring groupIds is always a valid iterable Array)
+  const cleanElementsForRestore = (rawElements: any[]) => {
+    if (!Array.isArray(rawElements)) return [];
+    return rawElements.map((el) => {
+      if (!el || typeof el !== "object") return el;
+      return {
+        ...el,
+        groupIds: Array.isArray(el.groupIds) ? el.groupIds : [],
+        boundElements: Array.isArray(el.boundElements) ? el.boundElements : null,
+        frameId: el.frameId ?? null,
+        locked: el.locked ?? false,
+        angle: el.angle ?? 0,
+      };
+    });
+  };
+
   // Load existing whiteboard data from database on mount
   useEffect(() => {
     if (!excalidrawAPI || !projectId) return;
@@ -152,9 +169,10 @@ const Whiteboard = ({ onAPIReady }: Props) => {
         const data = res.data?.data;
 
         if (data && data.elements) {
-          lastSavedElementsRef.current = JSON.stringify(data.elements);
+          const safeElements = cleanElementsForRestore(data.elements);
+          lastSavedElementsRef.current = JSON.stringify(safeElements);
           excalidrawAPI.updateScene({
-            elements: data.elements,
+            elements: safeElements,
             appState: cleanAppStateForRestore(data.appState),
           });
 
@@ -189,6 +207,11 @@ const Whiteboard = ({ onAPIReady }: Props) => {
       lastSavedElementsRef.current = serialized;
       pendingDataRef.current = null;
       setSaveStatus("saved");
+      toast.add({
+        type: "success",
+        title: "All changes saved",
+        description: "Whiteboard auto-saved successfully.",
+      });
     } catch (error) {
       console.error("Error saving canvas:", error);
       setSaveStatus("unsaved");
@@ -320,30 +343,6 @@ const Whiteboard = ({ onAPIReady }: Props) => {
           }}
         />
 
-        {/* Auto-Save Status Pill */}
-        <div className="absolute top-4 right-4 z-40 pointer-events-none">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-card/90 backdrop-blur-md border border-border-divider shadow-xs text-xs font-medium transition-all">
-            {saveStatus === "saving" && (
-              <>
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block" />
-                <span className="text-navy font-semibold">Saving changes...</span>
-              </>
-            )}
-            {saveStatus === "unsaved" && (
-              <>
-                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                <span className="text-slate-text">Auto-saving in 5s...</span>
-              </>
-            )}
-            {saveStatus === "saved" && (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                <span className="text-slate-text">All changes saved</span>
-              </>
-            )}
-          </div>
-        </div>
-
         {selectedElement && (
           <FloatingProperties
             selectedElement={selectedElement}
@@ -351,6 +350,9 @@ const Whiteboard = ({ onAPIReady }: Props) => {
             position={getFloatingPosition()}
           />
         )}
+
+        {/* Floating Bottom Dock (Notes & Emoji) */}
+        <BottomDock excalidrawAPI={excalidrawAPI} />
 
         <div className="absolute left-4 top-1/2 z-50 -translate-y-1/2 flex flex-col gap-1 rounded-2xl bg-white border p-1.5 shadow-xl">
           {tools.map((tool) => {

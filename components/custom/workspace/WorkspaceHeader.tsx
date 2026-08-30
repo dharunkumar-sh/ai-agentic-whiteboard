@@ -1,21 +1,37 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon, Save, Share } from "lucide-react";
 
 type Props = {
+  projectName?: string;
   selectedTab: (value: string) => void;
   onExport?: () => void;
   onSave?: () => void;
 };
 
-const WorkspaceHeader = ({ selectedTab, onExport, onSave }: Props) => {
+const WorkspaceHeader = ({ projectName, selectedTab, onExport, onSave }: Props) => {
     return (
     <div className="p-3 border-b flex justify-between items-center">
-      <div className="flex items-center gap-2">
-        <Image src={"/logo.svg"} alt="Logo" width={35} height={35} />
-        <h2>Workspace Name</h2>
+      <div className="flex items-center gap-2.5">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center hover:opacity-85 transition-opacity cursor-pointer group"
+          title="Back to Dashboard"
+        >
+          <Image
+            src={"/logo.svg"}
+            alt="Logo"
+            width={35}
+            height={35}
+            className="transition-transform group-hover:scale-105"
+          />
+        </Link>
+        <h2 className="font-semibold text-sm text-navy">
+          {projectName || "Workspace Name"}
+        </h2>
       </div>
       {/* Switch */}
       <div>
